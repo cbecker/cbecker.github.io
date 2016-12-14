@@ -23,6 +23,12 @@
         width: 70%;
         }
     </style>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+          $('select').material_select();
+        });
+    </script>
   </head>
 
   <body>
@@ -34,25 +40,114 @@
             <div class="card blue-grey darken-1">
               <div class="card-content white-text">
                 <span class="card-title"></span>
-                <p id="quote">I am a very simple card. I am good at containing small bits of information.
-                I am convenient because I require little markup to use effectively.</p>
+                <p id="quote">Text here</p>
               </div>
               <div class="card-action">
                 <a href="javascript:update_quote()">Generate random quote</a>
               </div>
           </div>
         </div>
+
+        <!-- Configuration -->
+        <ul class="collapsible" data-collapsible="accordion">
+          <li>
+            <div class="collapsible-header"><i class="material-icons">arrow_drop_down_circle </i>Settings</div>
+            <div class="collapsible-body">
+                <p>
+                    <input type="checkbox" id="auto_enable" onclick="config_auto_enable_changed();" />
+                    <label for="auto_enable">Automatically display a new message every</label>
+                    <select id="period" onchange="config_time_changed(this);">
+                        <!-- <option value="0.01">xx minutes</option> -->
+                      <option value="15">15 minutes</option>
+                      <option value="30">30 minutes</option>
+                      <option value="60">1 hour</option>
+                      <option value="120">2 hours</option>
+                      <option value="240">4 hours</option>
+                      <option value="360">6 hours</option>
+                    </select>
+                    <input type="checkbox" id="notif_enable" onclick="config_auto_enable_changed();" />
+                    <label for="notif_enable">Show browser notification popup</label>
+                </p>
+            </div>
+          </li>
+        </ul>
+
     </div>
-    
+        
+    <script type="text/javascript" src="notify.js"></script>
     <script type="text/javascript" src="quotes.js"></script>
+    <script type="text/javascript" src="cookie_helper.js"></script>
+    
     <script type="text/javascript">
+        var msgInterval = null
+        
+        function config_time_changed(obj) {
+            update_config()
+        }
+        
+        function config_auto_enable_changed() {
+            update_config()
+        }
+        
+        function load_config() {
+            var auto_enable = docCookies.getItem("auto_enable", true)
+            var period = docCookies.getItem("period", 120)
+            var notif_enable = docCookies.getItem("notif_enable", false)
+            
+            document.getElementById("auto_enable").checked = (auto_enable == "true") || (auto_enable == true)
+            document.getElementById("notif_enable").checked = (notif_enable == "true") || (notif_enable == true)
+            document.getElementById("period").value = period
+        }
+        
+        function update_config() {
+            period = document.getElementById("period").value
+            
+            docCookies.setItem("period", period)
+            docCookies.setItem("auto_enable", document.getElementById("auto_enable").checked)
+            
+            clearInterval(msgInterval)
+            if (document.getElementById("auto_enable").checked) {
+                msgInterval = setInterval( update_quote, 1000 * 60 * period )
+            }
+            
+            if (document.getElementById("notif_enable").checked)
+                Notify.requestPermission()
+        }
+        
+        function strip(html)
+        {
+           var tmp = document.createElement("DIV");
+           tmp.innerHTML = html;
+           return tmp.textContent || tmp.innerText || "";
+        }
+        
         function update_quote() {
             var n = phrases.length
             var idx = Math.floor(Math.random() * n)
             
-            document.getElementById("quote").innerHTML = phrases[idx]
+            var phrase = phrases[idx]
+            
+            document.getElementById("quote").innerHTML = phrase
+            
+            if (document.getElementById("notif_enable").checked) {
+                var myNotification = new Notify('Stoic phrase', {
+                    body: strip(phrase)
+                });
+                
+                myNotification.options.timeout = 5.0  // in seconds
+                myNotification.onClickNotification = function(x) { window.focus(); setTimeout( function() {myNotification.close();}, 500) };
+                console.log("NOTIF")
+                myNotification.show()
+            }
+    
+            /*var myNotification = new Notify('Stoic phrase', {
+                body: phrases[idx]
+            });
+            
+            myNotification.show();*/
         }
         
+        load_config()
         update_quote()
     </script>
   </body>

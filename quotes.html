@@ -121,11 +121,47 @@
            return tmp.textContent || tmp.innerText || "";
         }
         
+        function findGetParameter(parameterName) {
+            var result = null,
+                tmp = [];
+            location.search
+            .substr(1)
+                .split("&")
+                .forEach(function (item) {
+                tmp = item.split("=");
+                if (tmp[0] === parameterName) result = decodeURIComponent(tmp[1]);
+            });
+            return result;
+        }
+        
+        // update quote info
+        var range = function range(N) { return Array.from(new Array(N), (x,i) => i); }
+        
+        var uniqueAttr = Array.from(new Set( phrases.map( function(x) {return x[1]} )))
+        var attrIdxMap = {}
+        for (attr in uniqueAttr) {
+            if (attr == 0)
+                continue;  // skip no attribute
+            console.log(attr)
+            attrIdxMap[attr] = range( phrases.length ).filter( function(i) { return phrases[i][1] == attr } )
+        }
+        
+        // push all idxs
+        attrIdxMap[-1] = range(phrases.length)
+        
         function update_quote() {
-            var n = phrases.length
+            /** We will use '?phraseFilter=XX' to allow filtering phrases accoding to their attributes.
+                If not present, it will get the value -1 and show all quotes **/
+            var activeAttr = findGetParameter('phraseFilter')
+            if (activeAttr == null)
+                activeAttr = -1
+            console.log(activeAttr)
+            
+            var attrIdxs = attrIdxMap[activeAttr]
+            var n = attrIdxs.length
             var idx = Math.floor(Math.random() * n)
             
-            var phrase = phrases[idx]
+            var phrase = phrases[attrIdxs[idx]][0]
             
             document.getElementById("quote").innerHTML = phrase
             
